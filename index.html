@@ -2,226 +2,110 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <!-- 针对手机端进行优化，禁止双击缩放，体验更像原生App -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PPL 专属三分化训练</title>
-    
-    <!-- 引入 Tailwind CSS (样式框架) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- 引入 React 和 ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <!-- 引入 Babel (用于在浏览器中编译 JSX) -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
     <style>
-        /* 隐藏滚动条但保留滚动功能 */
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* 火柴人 SVG 动画关键帧 */
-        @keyframes moveVertical {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-35px); }
-        }
-        @keyframes moveVerticalDown {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(35px); }
-        }
-        @keyframes moveDiagonalUp {
-            0%, 100% { transform: translate(0, 0); }
-            50% { transform: translate(25px, -35px); }
-        }
-        @keyframes moveHorizontal {
-            0%, 100% { transform: translateX(0); }
-            50% { transform: translateX(35px); }
-        }
-        @keyframes arcRaise {
-            0%, 100% { transform: rotate(0deg); }
-            50% { transform: rotate(75deg); }
-        }
-        @keyframes arcRaiseReverse {
-            0%, 100% { transform: rotate(0deg); }
-            50% { transform: rotate(-75deg); }
-        }
-        @keyframes hingeUp {
-            0%, 100% { transform: rotate(0deg); }
-            50% { transform: rotate(-75deg); }
-        }
-        @keyframes hingeDown {
-            0%, 100% { transform: rotate(0deg); }
-            50% { transform: rotate(75deg); }
-        }
+        .modal-enter { animation: fadeIn 0.2s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes bounce-toast { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -10px); } }
+        .animate-bounce-toast { animation: bounce-toast 2s infinite ease-in-out; }
     </style>
 </head>
 <body class="bg-black text-slate-200 font-sans selection:bg-slate-700">
-    <!-- React 应用的挂载点 -->
     <div id="root"></div>
 
-    <!-- React 逻辑代码 -->
     <script type="text/babel">
-        const { useState } = React;
+        const { useState, useEffect } = React;
 
-        // --- SVG 图标组件 (替代外部依赖) ---
-        const IconDumbbell = ({ size = 24, strokeWidth = 2, className = "" }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m14.5 17.5 3-3"/><path d="m5.5 9.5 3-3"/><path d="M6 12v3a1 1 0 0 0 1 1h3"/><path d="M14 6h3a1 1 0 0 1 1 1v3"/><path d="m16 16-5-5"/><path d="m20 18-2 2-2-2 2-2z"/><path d="m6 4-2 2 2 2 2-2z"/></svg>
-        );
-        const IconActivity = ({ size = 24, className = "" }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        );
-        const IconShieldCheck = ({ size = 24, className = "" }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
-        );
-        const IconInfo = ({ size = 24, className = "" }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-        );
+        // --- 鼓励语库 ---
+        const quotes = [
+            "太棒了！你的每一次力竭，都是肌肉重生的开始！💪",
+            "汗水是脂肪的眼泪，今天干得漂亮！🔥",
+            "你的坚持，时间看得见。继续保持！🏆",
+            "今日打卡完成，享受肌肉酸痛的快感吧！✨",
+            "又向目标迈进了一步，不要停下脚步！🚀",
+            "钢铁般的意志，铸就钢铁般的身躯！🤖",
+            "自律给你自由，今天你战胜了自己！👑"
+        ];
+
+        // --- 图标库 ---
+        const IconDumbbell = ({ size = 24, strokeWidth = 2, className="" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m14.5 17.5 3-3"/><path d="m5.5 9.5 3-3"/><path d="M6 12v3a1 1 0 0 0 1 1h3"/><path d="M14 6h3a1 1 0 0 1 1 1v3"/><path d="m16 16-5-5"/><path d="m20 18-2 2-2-2 2-2z"/><path d="m6 4-2 2 2 2 2-2z"/></svg>;
+        const IconActivity = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>;
+        const IconShieldCheck = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>;
+        const IconTimer = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+        const IconHistory = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>;
+        const IconCheck = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"/></svg>;
+        const IconChevronLeft = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="15 18 9 12 15 6"/></svg>;
+        const IconFlame = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>;
+        const IconMaximize = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>;
 
         // --- 训练计划数据 ---
         const workoutData = {
           push: {
-            id: 'push', color: 'text-rose-500', bgColor: 'bg-rose-500', lightBg: 'bg-rose-500/15', svgColor: '#f43f5e',
+            id: 'push', color: 'text-rose-500', bgColor: 'bg-rose-500', lightBg: 'bg-rose-500/15', svgColor: '#f43f5e', btnBg: 'from-rose-500 to-rose-600',
             title: '推日 (Push)', desc: '胸部、肩部前中束、肱三头肌',
             exercises: [
-              { name: "平板卧推", sets: "4组 · 8-10次", target: "胸大肌整体厚度", equipment: "平板卧推架、杠铃/哑铃", trajectory: "直臂正上方起步，缓慢下放至胸口中央上方，推起至手臂伸直（关节微曲不锁死）。", animType: "bench-press" },
-              { name: "上斜哑铃推举", sets: "3组 · 10-12次", target: "上胸饱满度", equipment: "上斜调节凳 (约30-45度)、哑铃", trajectory: "沿斜向上方推起，下放时充分感受上胸拉伸，哑铃运动轨迹呈斜线。", animType: "incline-press" },
-              { name: "坐姿哑铃推举", sets: "3组 · 8-10次", target: "三角肌前/中束", equipment: "带靠背座椅、哑铃", trajectory: "垂直向上推起哑铃至头顶，下放至大臂与地面平行或略低。", animType: "shoulder-press" },
-              { name: "哑铃侧平举", sets: "4组 · 12-15次", target: "三角肌中束 (宽肩)", equipment: "轻重量哑铃", trajectory: "手臂微曲，手肘发力向两侧上方抬起，想象“向两侧倒水”的动作。", animType: "lateral-raise" },
-              { name: "绳索下压", sets: "3组 · 10-12次", target: "肱三头肌", equipment: "龙门架、直杆或V型绳索", trajectory: "大臂夹紧身体两侧固定不动，仅小臂发力向下压，底部停顿1秒收缩。", animType: "tricep-pushdown" }
+              { name: "平板卧推", setsNum: 4, sets: "4组 · 8-10次", target: "胸大肌整体厚度", equipment: "平板卧推架、杠铃", trajectory: "直臂正上方起步，下放至胸口，推起至手臂伸直不锁死。", animType: "bench-press" },
+              { name: "上斜哑铃推举", setsNum: 3, sets: "3组 · 10-12次", target: "上胸饱满度", equipment: "上斜凳(30-45度)", trajectory: "沿斜向上方推起，下放时充分感受上胸肌纤维的拉伸。", animType: "incline-press" },
+              { name: "坐姿哑铃推举", setsNum: 3, sets: "3组 · 8-10次", target: "三角肌前/中束", equipment: "带靠背座椅、哑铃", trajectory: "核心收紧，垂直向上推起至头顶，下放至大臂略低于平行线。", animType: "shoulder-press" },
+              { name: "哑铃侧平举", setsNum: 4, sets: "4组 · 12-15次", target: "三角肌中束(宽肩)", equipment: "轻重量哑铃", trajectory: "沉肩，手臂微曲，向两侧上方抬起，想象向两侧倒水的动作。", animType: "lateral-raise" },
+              { name: "绳索下压", setsNum: 3, sets: "3组 · 10-12次", target: "肱三头肌", equipment: "龙门架、直杆/绳索", trajectory: "大臂夹紧身体固定，仅小臂发力向下压到底，底部停顿1秒。", animType: "tricep-pushdown" }
             ]
           },
           pull: {
-            id: 'pull', color: 'text-sky-500', bgColor: 'bg-sky-500', lightBg: 'bg-sky-500/15', svgColor: '#0ea5e9',
+            id: 'pull', color: 'text-sky-500', bgColor: 'bg-sky-500', lightBg: 'bg-sky-500/15', svgColor: '#0ea5e9', btnBg: 'from-sky-500 to-sky-600',
             title: '拉日 (Pull)', desc: '背阔肌、三角肌后束、肱二头肌',
             exercises: [
-              { name: "高位下拉 (或引体)", sets: "4组 · 8-12次", target: "背阔肌 (背部宽度)", equipment: "高位下拉器械、宽握把", trajectory: "肩胛骨先下沉，然后手肘向腰部方向发力下拉，将横杆拉至锁骨位置。", animType: "lat-pulldown" },
-              { name: "坐姿绳索划船", sets: "4组 · 8-10次", target: "背部厚度", equipment: "低位划船机、V型把手", trajectory: "腰背挺直，肩胛骨后缩，将把手向肚脐方向水平拉动，感受背部挤压。", animType: "cable-row" },
-              { name: "蝴蝶机反向飞鸟", sets: "3组 · 12-15次", target: "三角肌后束 (改善体态)", equipment: "反向蝴蝶机", trajectory: "胸部贴紧前方靠垫，手肘微曲，向后水平打开双臂，挤压肩膀后侧。", animType: "reverse-fly" },
-              { name: "哑铃交替弯举", sets: "3组 · 10-12次", target: "肱二头肌", equipment: "哑铃", trajectory: "大臂固定在身体两侧，小臂向上弯举，顶点挤压二头肌，下放要慢。", animType: "bicep-curl" },
-              { name: "锤式弯举", sets: "3组 · 10-12次", target: "二头外侧及小臂", equipment: "哑铃", trajectory: "掌心相对握住哑铃（像举锤子一样）向上弯举，轨迹同上。", animType: "bicep-curl" }
+              { name: "高位下拉 (或引体)", setsNum: 4, sets: "4组 · 8-12次", target: "背阔肌宽度", equipment: "高位下拉器械", trajectory: "肩胛骨先下沉(收紧后背)，手肘向腰部下拉，将把手拉至锁骨。", animType: "lat-pulldown" },
+              { name: "坐姿绳索划船", setsNum: 4, sets: "4组 · 8-10次", target: "背部厚度", equipment: "低位划船机", trajectory: "腰背挺直，将把手向肚脐方向水平拉动，在顶点用力挤压背部。", animType: "cable-row" },
+              { name: "蝴蝶机反向飞鸟", setsNum: 3, sets: "3组 · 12-15次", target: "三角肌后束", equipment: "反向蝴蝶机", trajectory: "胸部贴紧靠垫，手肘微曲，向后水平打开双臂，挤压肩膀后侧。", animType: "reverse-fly" },
+              { name: "哑铃交替弯举", setsNum: 3, sets: "3组 · 10-12次", target: "肱二头肌", equipment: "哑铃", trajectory: "大臂垂直于地面固定，小臂向上弯举，控制下放速度。", animType: "bicep-curl" },
+              { name: "锤式弯举", setsNum: 3, sets: "3组 · 10-12次", target: "二头外侧及小臂", equipment: "哑铃", trajectory: "掌心相对像举锤子一样向上弯举，专注二头外侧的收缩。", animType: "bicep-curl" }
             ]
           },
           legs: {
-            id: 'legs', color: 'text-emerald-500', bgColor: 'bg-emerald-500', lightBg: 'bg-emerald-500/15', svgColor: '#10b981',
+            id: 'legs', color: 'text-emerald-500', bgColor: 'bg-emerald-500', lightBg: 'bg-emerald-500/15', svgColor: '#10b981', btnBg: 'from-emerald-500 to-emerald-600',
             title: '腿日 (Legs)', desc: '臀腿下肢肌群、核心力量',
             exercises: [
-              { name: "哈克深蹲", sets: "4组 · 8-10次", target: "股四头肌、臀大肌", equipment: "哈克深蹲机", trajectory: "背部紧贴靠背，脚踩踏板中下部。沿轨道斜向下蹲至大腿与小腿约90度后发力蹬起。", animType: "hack-squat" },
-              { name: "倒蹬 / 腿举", sets: "4组 · 10-12次", target: "臀部、大腿后侧", equipment: "45度倒蹬机", trajectory: "双脚踩在踏板偏高、偏宽处。下放至膝盖约90度，蹬起时膝盖不要完全锁死，骨盆勿离垫。", animType: "leg-press" },
-              { name: "坐姿腿屈伸", sets: "3组 · 12-15次", target: "股四头肌 (孤立)", equipment: "腿屈伸机", trajectory: "膝盖对准器械轴心，向上踢起小腿至双腿伸直，顶峰停顿1秒彻底收缩。", animType: "leg-extension" },
-              { name: "坐姿腿弯举", sets: "4组 · 10-12次", target: "腘绳肌 (平衡前后力量)", equipment: "腿弯举机", trajectory: "大腿前侧被挡板固定，小腿向后下方用力弯曲，感受大腿后侧强烈收缩。", animType: "leg-curl" },
-              { name: "站姿提踵", sets: "3组 · 15-20次", target: "小腿肌群", equipment: "史密斯机或提踵机", trajectory: "前脚掌踩在垫板上，脚后跟悬空下压至最低，然后尽力踮起脚尖向上，顶峰停顿。", animType: "calf-raise" }
+              { name: "哈克深蹲", setsNum: 4, sets: "4组 · 8-10次", target: "股四头肌、臀大肌", equipment: "哈克深蹲机", trajectory: "背靠紧垫板，下蹲至大腿小腿呈90度后，脚后跟发力蹬起。", animType: "hack-squat" },
+              { name: "倒蹬 / 腿举", setsNum: 4, sets: "4组 · 10-12次", target: "臀部、大腿后侧", equipment: "45度倒蹬机", trajectory: "脚踩在踏板中上部偏宽，下放时骨盆不要离开靠背，推起不锁死。", animType: "leg-press" },
+              { name: "坐姿腿屈伸", setsNum: 3, sets: "3组 · 12-15次", target: "股四头肌孤立", equipment: "腿屈伸机", trajectory: "向上踢起小腿至双腿完全伸直，顶峰务必停顿1-2秒感受灼烧。", animType: "leg-extension" },
+              { name: "坐姿腿弯举", setsNum: 4, sets: "4组 · 10-12次", target: "腘绳肌 (大腿后侧)", equipment: "腿弯举机", trajectory: "大腿前侧被垫板死死固定，小腿向后下方用力弯曲，感受拉扯。", animType: "leg-curl" },
+              { name: "站姿提踵", setsNum: 3, sets: "3组 · 15-20次", target: "小腿肌群", equipment: "史密斯/提踵机", trajectory: "前脚掌踩垫板边缘，脚后跟悬空下压至最低，然后尽力向上踮起。", animType: "calf-raise" }
             ]
           }
         };
 
-        // --- 火柴人 SVG 动画组件 ---
+        // --- 精细化 SVG 动画组件 (增加了身体结构) ---
         const StickmanAnimation = ({ type, color }) => {
-          const getAnimationElements = () => {
+          const getElements = () => {
             switch (type) {
-              case 'bench-press': return (
-                  <>
-                    <g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="20" y1="70" x2="80" y2="70" /><line x1="30" y1="70" x2="30" y2="90" /><line x1="70" y1="70" x2="70" y2="90" /></g>
-                    <g stroke="#cbd5e1" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="30" cy="65" r="5" /><line x1="35" y1="65" x2="65" y2="65" /><path d="M 65 65 L 75 75 L 75 90" /></g>
-                    <g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 45 65 L 45 75 L 45 50"><animate attributeName="d" values="M 45 65 L 45 75 L 45 50; M 45 65 L 45 55 L 45 35; M 45 65 L 45 75 L 45 50" dur="2s" repeatCount="indefinite" /></path><line x1="30" y1="50" x2="60" y2="50" strokeWidth="4"><animate attributeName="y1" values="50; 35; 50" dur="2s" repeatCount="indefinite" /><animate attributeName="y2" values="50; 35; 50" dur="2s" repeatCount="indefinite" /></line></g>
-                  </>
-                );
-              case 'incline-press': return (
-                  <>
-                    <g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="30" y1="80" x2="65" y2="45" /></g>
-                    <g stroke="#cbd5e1" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="65" cy="38" r="5" /><line x1="60" y1="45" x2="35" y2="70" /><path d="M 35 70 L 25 80 L 25 95" /></g>
-                    <g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 50 55 L 55 65 L 40 50"><animate attributeName="d" values="M 50 55 L 55 65 L 40 50; M 50 55 L 45 45 L 30 30; M 50 55 L 55 65 L 40 50" dur="2s" repeatCount="indefinite" /></path><circle cx="40" cy="50" r="4" fill={color}><animate attributeName="cx" values="40; 30; 40" dur="2s" repeatCount="indefinite" /><animate attributeName="cy" values="50; 30; 50" dur="2s" repeatCount="indefinite" /></circle></g>
-                  </>
-                );
-              case 'shoulder-press': return (
-                  <>
-                    <g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="35" y1="80" x2="65" y2="80" /><line x1="35" y1="80" x2="35" y2="40" /></g>
-                    <g stroke="#cbd5e1" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="45" cy="35" r="5" /><line x1="45" y1="40" x2="45" y2="75" /><path d="M 45 75 L 60 75 L 60 95" /></g>
-                    <g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 45 45 L 50 60 L 50 45"><animate attributeName="d" values="M 45 45 L 50 60 L 50 45; M 45 45 L 47 30 L 47 15; M 45 45 L 50 60 L 50 45" dur="2s" repeatCount="indefinite" /></path><line x1="40" y1="45" x2="60" y2="45" strokeWidth="4"><animate attributeName="y1" values="45; 15; 45" dur="2s" repeatCount="indefinite" /><animate attributeName="y2" values="45; 15; 45" dur="2s" repeatCount="indefinite" /></line></g>
-                  </>
-                );
-              case 'lateral-raise': return (
-                  <>
-                    <g stroke="#cbd5e1" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="50" cy="25" r="5" /><line x1="50" y1="30" x2="50" y2="65" /><path d="M 50 65 L 40 95 M 50 65 L 60 95" /></g>
-                    <g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 50 35 L 35 60 M 50 35 L 65 60"><animate attributeName="d" values="M 50 35 L 35 60 M 50 35 L 65 60; M 50 35 L 20 40 M 50 35 L 80 40; M 50 35 L 35 60 M 50 35 L 65 60" dur="2s" repeatCount="indefinite" /></path><circle cx="35" cy="60" r="3" fill={color}><animate attributeName="cx" values="35; 20; 35" dur="2s" repeatCount="indefinite" /><animate attributeName="cy" values="60; 40; 60" dur="2s" repeatCount="indefinite" /></circle><circle cx="65" cy="60" r="3" fill={color}><animate attributeName="cx" values="65; 80; 65" dur="2s" repeatCount="indefinite" /><animate attributeName="cy" values="60; 40; 60" dur="2s" repeatCount="indefinite" /></circle></g>
-                  </>
-                );
-              case 'tricep-pushdown': return (
-                  <>
-                    <g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="70" y1="10" x2="70" y2="90" /><line x1="60" y1="10" x2="80" y2="10" /></g>
-                    <g stroke="#cbd5e1" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="35" cy="25" r="5" /><line x1="35" y1="30" x2="45" y2="65" /><path d="M 45 65 L 40 95 M 45 65 L 50 95" /></g>
-                    <g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 40 35 L 45 50 L 55 40"><animate attributeName="d" values="M 40 35 L 45 50 L 55 40; M 40 35 L 45 50 L 55 70; M 40 35 L 45 50 L 55 40" dur="2s" repeatCount="indefinite" /></path><line x1="70" y1="10" x2="55" y2="40" strokeWidth="1" strokeDasharray="2"><animate attributeName="y2" values="40; 70; 40" dur="2s" repeatCount="indefinite" /></line><circle cx="55" cy="40" r="3" fill={color}><animate attributeName="cy" values="40; 70; 40" dur="2s" repeatCount="indefinite" /></circle></g>
-                  </>
-                );
-              case 'lat-pulldown': return (
-                  <>
-                    <g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="30" y1="75" x2="60" y2="75" /><line x1="50" y1="10" x2="50" y2="30" strokeWidth="2" strokeDasharray="2" /></g>
-                    <g stroke="#cbd5e1" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="45" cy="40" r="5" /><line x1="45" y1="45" x2="45" y2="70" /><path d="M 45 70 L 55 70 L 55 90" /></g>
-                    <g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 45 45 L 35 25 L 50 25"><animate attributeName="d" values="M 45 45 L 35 25 L 50 25; M 45 45 L 35 55 L 45 45; M 45 45 L 35 25 L 50 25" dur="2s" repeatCount="indefinite" /></path><line x1="40" y1="25" x2="60" y2="25" strokeWidth="4"><animate attributeName="x1" values="40; 35" dur="2s" repeatCount="indefinite" /><animate attributeName="y1" values="25; 45" dur="2s" repeatCount="indefinite" /><animate attributeName="x2" values="60; 55" dur="2s" repeatCount="indefinite" /><animate attributeName="y2" values="25; 45" dur="2s" repeatCount="indefinite" /></line></g>
-                  </>
-                );
-              case 'cable-row': return (
-                  <>
-                    <g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="10" y1="75" x2="40" y2="75" /><line x1="70" y1="55" x2="90" y2="55" strokeWidth="2" strokeDasharray="2" /></g>
-                    <g stroke="#cbd5e1" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="30" cy="40" r="5" /><line x1="30" y1="45" x2="30" y2="70" /><path d="M 30 70 L 55 70 L 55 85" /></g>
-                    <g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 30 50 L 40 50 L 70 55"><animate attributeName="d" values="M 30 50 L 40 50 L 70 55; M 30 50 L 15 50 L 35 55; M 30 50 L 40 50 L 70 55" dur="2s" repeatCount="indefinite" /></path><circle cx="70" cy="55" r="3" fill={color}><animate attributeName="cx" values="70; 35; 70" dur="2s" repeatCount="indefinite" /></circle></g>
-                  </>
-                );
-              case 'reverse-fly': return (
-                  <>
-                    <g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="40" y1="60" x2="60" y2="60" /><line x1="60" y1="30" x2="60" y2="90" /></g>
-                    <g stroke="#cbd5e1" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="45" cy="30" r="5" /><line x1="45" y1="35" x2="45" y2="55" /><path d="M 45 55 L 50 85 M 45 55 L 40 85" /></g>
-                    <g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 45 40 L 70 40"><animate attributeName="d" values="M 45 40 L 70 40; M 45 40 L 25 40; M 45 40 L 70 40" dur="2s" repeatCount="indefinite" /></path><circle cx="70" cy="40" r="3" fill={color}><animate attributeName="cx" values="70; 25; 70" dur="2s" repeatCount="indefinite" /></circle></g>
-                  </>
-                );
-              case 'bicep-curl': return (
-                  <>
-                    <g stroke="#cbd5e1" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="45" cy="25" r="5" /><line x1="45" y1="30" x2="45" y2="70" /><path d="M 45 70 L 40 95 M 45 70 L 50 95" /></g>
-                    <g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 45 35 L 45 55 L 45 75"><animate attributeName="d" values="M 45 35 L 45 55 L 45 75; M 45 35 L 45 55 L 65 40; M 45 35 L 45 55 L 45 75" dur="2s" repeatCount="indefinite" /></path><circle cx="45" cy="75" r="4" fill={color}><animate attributeName="cx" values="45; 65; 45" dur="2s" repeatCount="indefinite" /><animate attributeName="cy" values="75; 40; 75" dur="2s" repeatCount="indefinite" /></circle></g>
-                  </>
-                );
-              case 'hack-squat': return (
-                  <>
-                    <g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="30" y1="80" x2="60" y2="20" /><line x1="10" y1="85" x2="40" y2="85" /></g>
-                    <g stroke="#cbd5e1" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="50" cy="35" r="5"><animate attributeName="cx" values="50; 40; 50" dur="2s" repeatCount="indefinite" /><animate attributeName="cy" values="35; 55; 35" dur="2s" repeatCount="indefinite" /></circle><line x1="45" y1="40" x2="35" y2="60"><animate attributeName="x1" values="45; 35; 45" dur="2s" repeatCount="indefinite" /><animate attributeName="y1" values="40; 60; 40" dur="2s" repeatCount="indefinite" /><animate attributeName="x2" values="35; 25; 35" dur="2s" repeatCount="indefinite" /><animate attributeName="y2" values="60; 80; 60" dur="2s" repeatCount="indefinite" /></line></g>
-                    <g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 35 60 L 45 70 L 25 80"><animate attributeName="d" values="M 35 60 L 45 70 L 25 80; M 25 80 L 40 85 L 25 80; M 35 60 L 45 70 L 25 80" dur="2s" repeatCount="indefinite" /></path></g>
-                  </>
-                );
-              case 'leg-press': return (
-                  <>
-                    <g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="15" y1="65" x2="40" y2="65" /><line x1="40" y1="65" x2="15" y2="25" /></g>
-                    <g stroke="#cbd5e1" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="25" cy="40" r="5" /><line x1="25" y1="45" x2="35" y2="60" /></g>
-                    <g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 35 60 L 45 50 L 55 45"><animate attributeName="d" values="M 35 60 L 45 50 L 55 45; M 35 60 L 60 40 L 75 30; M 35 60 L 45 50 L 55 45" dur="2s" repeatCount="indefinite" /></path><line x1="50" y1="35" x2="60" y2="55" strokeWidth="4"><animate attributeName="x1" values="50; 70; 50" dur="2s" repeatCount="indefinite" /><animate attributeName="y1" values="35; 20; 35" dur="2s" repeatCount="indefinite" /><animate attributeName="x2" values="60; 80; 60" dur="2s" repeatCount="indefinite" /><animate attributeName="y2" values="55; 40; 55" dur="2s" repeatCount="indefinite" /></line></g>
-                  </>
-                );
-              case 'leg-extension': return (
-                  <>
-                    <g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="20" y1="60" x2="50" y2="60" /><line x1="20" y1="60" x2="20" y2="30" /></g>
-                    <g stroke="#cbd5e1" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="25" cy="35" r="5" /><line x1="25" y1="40" x2="25" y2="55" /><line x1="25" y1="55" x2="50" y2="55" /></g>
-                    <g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 50 55 L 50 85"><animate attributeName="d" values="M 50 55 L 50 85; M 50 55 L 80 55; M 50 55 L 50 85" dur="2s" repeatCount="indefinite" /></path><circle cx="50" cy="85" r="4" fill={color}><animate attributeName="cx" values="50; 80; 50" dur="2s" repeatCount="indefinite" /><animate attributeName="cy" values="85; 55; 85" dur="2s" repeatCount="indefinite" /></circle></g>
-                  </>
-                );
-              case 'leg-curl': return (
-                  <>
-                    <g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="20" y1="55" x2="60" y2="55" /><line x1="20" y1="55" x2="20" y2="20" /></g>
-                    <g stroke="#cbd5e1" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="30" cy="30" r="5" /><line x1="30" y1="35" x2="30" y2="50" /><line x1="30" y1="50" x2="60" y2="50" /></g>
-                    <g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 60 50 L 80 50"><animate attributeName="d" values="M 60 50 L 80 50; M 60 50 L 60 80; M 60 50 L 80 50" dur="2s" repeatCount="indefinite" /></path><circle cx="80" cy="50" r="4" fill={color}><animate attributeName="cx" values="80; 60; 80" dur="2s" repeatCount="indefinite" /><animate attributeName="cy" values="50; 80; 50" dur="2s" repeatCount="indefinite" /></circle></g>
-                  </>
-                );
-              case 'calf-raise': return (
-                  <>
-                    <g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="30" y1="85" x2="60" y2="85" /></g>
-                    <g stroke="#cbd5e1" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="45" cy="20" r="5"><animate attributeName="cy" values="20; 10; 20" dur="2s" repeatCount="indefinite" /></circle><line x1="45" y1="25" x2="45" y2="55"><animate attributeName="y1" values="25; 15; 25" dur="2s" repeatCount="indefinite" /><animate attributeName="y2" values="55; 45; 55" dur="2s" repeatCount="indefinite" /></line><line x1="45" y1="25" x2="40" y2="45"><animate attributeName="y1" values="25; 15; 25" dur="2s" repeatCount="indefinite" /><animate attributeName="y2" values="45; 35; 45" dur="2s" repeatCount="indefinite" /></line></g>
-                    <g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 45 55 L 45 80 L 35 85"><animate attributeName="d" values="M 45 55 L 45 80 L 35 85; M 45 45 L 45 75 L 35 85; M 45 55 L 45 80 L 35 85" dur="2s" repeatCount="indefinite" /></path></g>
-                  </>
-                );
+              case 'bench-press': return <><g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="20" y1="70" x2="80" y2="70"/><line x1="30" y1="70" x2="30" y2="90"/><line x1="70" y1="70" x2="70" y2="90"/></g><g stroke="#94a3b8" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="28" cy="65" r="4" fill="#64748b"/><line x1="32" y1="65" x2="65" y2="65"/><path d="M 65 65 L 75 75 L 75 90"/></g><g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 45 65 L 45 75 L 45 50"><animate attributeName="d" values="M 45 65 L 45 75 L 45 50; M 45 65 L 45 55 L 45 35; M 45 65 L 45 75 L 45 50" dur="2.5s" repeatCount="indefinite"/></path><line x1="30" y1="50" x2="60" y2="50" strokeWidth="5"><animate attributeName="y1" values="50; 35; 50" dur="2.5s" repeatCount="indefinite"/><animate attributeName="y2" values="50; 35; 50" dur="2.5s" repeatCount="indefinite"/></line></g></>;
+              case 'incline-press': return <><g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="30" y1="80" x2="65" y2="45"/><line x1="30" y1="80" x2="20" y2="80"/></g><g stroke="#94a3b8" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="67" cy="36" r="4" fill="#64748b"/><line x1="62" y1="43" x2="35" y2="70"/><path d="M 35 70 L 25 80 L 25 95"/></g><g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 50 55 L 55 65 L 40 50"><animate attributeName="d" values="M 50 55 L 55 65 L 40 50; M 50 55 L 45 45 L 30 30; M 50 55 L 55 65 L 40 50" dur="2.5s" repeatCount="indefinite"/></path><circle cx="40" cy="50" r="5" fill={color}><animate attributeName="cx" values="40; 30; 40" dur="2.5s" repeatCount="indefinite"/><animate attributeName="cy" values="50; 30; 50" dur="2.5s" repeatCount="indefinite"/></circle></g></>;
+              case 'shoulder-press': return <><g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="35" y1="80" x2="65" y2="80"/><line x1="35" y1="80" x2="35" y2="40"/></g><g stroke="#94a3b8" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="45" cy="30" r="4" fill="#64748b"/><line x1="45" y1="35" x2="45" y2="75"/><path d="M 45 75 L 60 75 L 60 95"/></g><g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 45 45 L 50 60 L 50 45"><animate attributeName="d" values="M 45 45 L 50 60 L 50 45; M 45 45 L 47 30 L 47 15; M 45 45 L 50 60 L 50 45" dur="2.5s" repeatCount="indefinite"/></path><line x1="40" y1="45" x2="60" y2="45" strokeWidth="5"><animate attributeName="y1" values="45; 15; 45" dur="2.5s" repeatCount="indefinite"/><animate attributeName="y2" values="45; 15; 45" dur="2.5s" repeatCount="indefinite"/></line></g></>;
+              case 'lateral-raise': return <><g stroke="#94a3b8" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="50" cy="22" r="4" fill="#64748b"/><line x1="50" y1="27" x2="50" y2="65"/><path d="M 50 65 L 40 95 M 50 65 L 60 95"/></g><g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 50 35 L 35 60 M 50 35 L 65 60"><animate attributeName="d" values="M 50 35 L 35 60 M 50 35 L 65 60; M 50 35 L 20 40 M 50 35 L 80 40; M 50 35 L 35 60 M 50 35 L 65 60" dur="2.5s" repeatCount="indefinite"/></path><circle cx="35" cy="60" r="3.5" fill={color}><animate attributeName="cx" values="35; 20; 35" dur="2.5s" repeatCount="indefinite"/><animate attributeName="cy" values="60; 40; 60" dur="2.5s" repeatCount="indefinite"/></circle><circle cx="65" cy="60" r="3.5" fill={color}><animate attributeName="cx" values="65; 80; 65" dur="2.5s" repeatCount="indefinite"/><animate attributeName="cy" values="60; 40; 60" dur="2.5s" repeatCount="indefinite"/></circle></g></>;
+              case 'tricep-pushdown': return <><g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="70" y1="10" x2="70" y2="90"/><line x1="60" y1="10" x2="80" y2="10"/></g><g stroke="#94a3b8" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="32" cy="22" r="4" fill="#64748b"/><line x1="32" y1="27" x2="45" y2="60"/><path d="M 45 60 L 40 95 M 45 60 L 50 95"/></g><g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 38 35 L 45 50 L 55 40"><animate attributeName="d" values="M 38 35 L 45 50 L 55 40; M 38 35 L 45 50 L 55 70; M 38 35 L 45 50 L 55 40" dur="2.5s" repeatCount="indefinite"/></path><line x1="70" y1="10" x2="55" y2="40" strokeWidth="1.5" strokeDasharray="3"><animate attributeName="y2" values="40; 70; 40" dur="2.5s" repeatCount="indefinite"/></line><circle cx="55" cy="40" r="4" fill={color}><animate attributeName="cy" values="40; 70; 40" dur="2.5s" repeatCount="indefinite"/></circle></g></>;
+              case 'lat-pulldown': return <><g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="30" y1="75" x2="60" y2="75"/><line x1="50" y1="10" x2="50" y2="25" strokeWidth="2" strokeDasharray="2"/><rect x="25" y="70" width="10" height="15" rx="2" fill="#475569"/></g><g stroke="#94a3b8" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="40" cy="40" r="4" fill="#64748b"/><line x1="40" y1="45" x2="40" y2="70"/><path d="M 40 70 L 55 70 L 55 90"/></g><g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 40 45 L 30 25 L 50 25"><animate attributeName="d" values="M 40 45 L 30 25 L 50 25; M 40 45 L 30 55 L 45 45; M 40 45 L 30 25 L 50 25" dur="2.5s" repeatCount="indefinite"/></path><line x1="35" y1="25" x2="65" y2="25" strokeWidth="5"><animate attributeName="x1" values="35; 30" dur="2.5s" repeatCount="indefinite"/><animate attributeName="y1" values="25; 45" dur="2.5s" repeatCount="indefinite"/><animate attributeName="x2" values="65; 60" dur="2.5s" repeatCount="indefinite"/><animate attributeName="y2" values="25; 45" dur="2.5s" repeatCount="indefinite"/></line></g></>;
+              case 'cable-row': return <><g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="10" y1="75" x2="40" y2="75"/><line x1="70" y1="55" x2="90" y2="55" strokeWidth="2" strokeDasharray="2"/></g><g stroke="#94a3b8" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="28" cy="35" r="4" fill="#64748b"/><line x1="28" y1="40" x2="28" y2="70"/><path d="M 28 70 L 55 70 L 55 85"/></g><g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 28 45 L 38 45 L 70 55"><animate attributeName="d" values="M 28 45 L 38 45 L 70 55; M 28 45 L 15 45 L 35 55; M 28 45 L 38 45 L 70 55" dur="2.5s" repeatCount="indefinite"/></path><circle cx="70" cy="55" r="4" fill={color}><animate attributeName="cx" values="70; 35; 70" dur="2.5s" repeatCount="indefinite"/></circle></g></>;
+              case 'reverse-fly': return <><g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="35" y1="60" x2="55" y2="60"/><line x1="55" y1="30" x2="55" y2="90"/></g><g stroke="#94a3b8" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="45" cy="25" r="4" fill="#64748b"/><line x1="45" y1="30" x2="45" y2="55"/><path d="M 45 55 L 50 85 M 45 55 L 40 85"/></g><g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 45 35 L 75 35"><animate attributeName="d" values="M 45 35 L 75 35; M 45 35 L 20 35; M 45 35 L 75 35" dur="2.5s" repeatCount="indefinite"/></path><circle cx="75" cy="35" r="4" fill={color}><animate attributeName="cx" values="75; 20; 75" dur="2.5s" repeatCount="indefinite"/></circle></g></>;
+              case 'bicep-curl': return <><g stroke="#94a3b8" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="45" cy="20" r="4" fill="#64748b"/><line x1="45" y1="25" x2="45" y2="60"/><path d="M 45 60 L 40 95 M 45 60 L 50 95"/></g><g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 45 30 L 45 50 L 45 70"><animate attributeName="d" values="M 45 30 L 45 50 L 45 70; M 45 30 L 45 50 L 65 35; M 45 30 L 45 50 L 45 70" dur="2.5s" repeatCount="indefinite"/></path><circle cx="45" cy="70" r="4.5" fill={color}><animate attributeName="cx" values="45; 65; 45" dur="2.5s" repeatCount="indefinite"/><animate attributeName="cy" values="70; 35; 70" dur="2.5s" repeatCount="indefinite"/></circle></g></>;
+              case 'hack-squat': return <><g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="30" y1="80" x2="60" y2="20"/><line x1="10" y1="85" x2="40" y2="85"/></g><g stroke="#94a3b8" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="50" cy="35" r="4" fill="#64748b"><animate attributeName="cx" values="50; 40; 50" dur="2.5s" repeatCount="indefinite"/><animate attributeName="cy" values="35; 55; 35" dur="2.5s" repeatCount="indefinite"/></circle><line x1="45" y1="40" x2="35" y2="60"><animate attributeName="x1" values="45; 35; 45" dur="2.5s" repeatCount="indefinite"/><animate attributeName="y1" values="40; 60; 40" dur="2.5s" repeatCount="indefinite"/><animate attributeName="x2" values="35; 25; 35" dur="2.5s" repeatCount="indefinite"/><animate attributeName="y2" values="60; 80; 60" dur="2.5s" repeatCount="indefinite"/></line></g><g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 35 60 L 45 70 L 25 80"><animate attributeName="d" values="M 35 60 L 45 70 L 25 80; M 25 80 L 40 85 L 25 80; M 35 60 L 45 70 L 25 80" dur="2.5s" repeatCount="indefinite"/></path></g></>;
+              case 'leg-press': return <><g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="15" y1="65" x2="40" y2="65"/><line x1="40" y1="65" x2="15" y2="25"/></g><g stroke="#94a3b8" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="25" cy="35" r="4" fill="#64748b"/><line x1="25" y1="40" x2="35" y2="60"/></g><g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 35 60 L 45 50 L 55 45"><animate attributeName="d" values="M 35 60 L 45 50 L 55 45; M 35 60 L 60 40 L 75 30; M 35 60 L 45 50 L 55 45" dur="2.5s" repeatCount="indefinite"/></path><line x1="50" y1="35" x2="60" y2="55" strokeWidth="5"><animate attributeName="x1" values="50; 70; 50" dur="2.5s" repeatCount="indefinite"/><animate attributeName="y1" values="35; 20; 35" dur="2.5s" repeatCount="indefinite"/><animate attributeName="x2" values="60; 80; 60" dur="2.5s" repeatCount="indefinite"/><animate attributeName="y2" values="55; 40; 55" dur="2.5s" repeatCount="indefinite"/></line></g></>;
+              case 'leg-extension': return <><g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="20" y1="60" x2="50" y2="60"/><line x1="20" y1="60" x2="20" y2="30"/></g><g stroke="#94a3b8" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="25" cy="30" r="4" fill="#64748b"/><line x1="25" y1="35" x2="25" y2="55"/><line x1="25" y1="55" x2="50" y2="55"/></g><g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 50 55 L 50 85"><animate attributeName="d" values="M 50 55 L 50 85; M 50 55 L 80 55; M 50 55 L 50 85" dur="2.5s" repeatCount="indefinite"/></path><circle cx="50" cy="85" r="5" fill={color}><animate attributeName="cx" values="50; 80; 50" dur="2.5s" repeatCount="indefinite"/><animate attributeName="cy" values="85; 55; 85" dur="2.5s" repeatCount="indefinite"/></circle></g></>;
+              case 'leg-curl': return <><g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="20" y1="55" x2="60" y2="55"/><line x1="20" y1="55" x2="20" y2="20"/></g><g stroke="#94a3b8" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="28" cy="25" r="4" fill="#64748b"/><line x1="28" y1="30" x2="28" y2="50"/><line x1="28" y1="50" x2="60" y2="50"/></g><g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 60 50 L 80 50"><animate attributeName="d" values="M 60 50 L 80 50; M 60 50 L 60 80; M 60 50 L 80 50" dur="2.5s" repeatCount="indefinite"/></path><circle cx="80" cy="50" r="5" fill={color}><animate attributeName="cx" values="80; 60; 80" dur="2.5s" repeatCount="indefinite"/><animate attributeName="cy" values="50; 80; 50" dur="2.5s" repeatCount="indefinite"/></circle></g></>;
+              case 'calf-raise': return <><g stroke="#475569" strokeWidth="4" strokeLinecap="round"><line x1="30" y1="85" x2="60" y2="85"/></g><g stroke="#94a3b8" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="45" cy="18" r="4" fill="#64748b"><animate attributeName="cy" values="18; 8; 18" dur="2.5s" repeatCount="indefinite"/></circle><line x1="45" y1="23" x2="45" y2="55"><animate attributeName="y1" values="23; 13; 23" dur="2.5s" repeatCount="indefinite"/><animate attributeName="y2" values="55; 45; 55" dur="2.5s" repeatCount="indefinite"/></line><line x1="45" y1="23" x2="40" y2="45"><animate attributeName="y1" values="23; 13; 23" dur="2.5s" repeatCount="indefinite"/><animate attributeName="y2" values="45; 35; 45" dur="2.5s" repeatCount="indefinite"/></line></g><g stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M 45 55 L 45 80 L 35 85"><animate attributeName="d" values="M 45 55 L 45 80 L 35 85; M 45 45 L 45 75 L 35 85; M 45 55 L 45 80 L 35 85" dur="2.5s" repeatCount="indefinite"/></path></g></>;
               default: return <circle cx="50" cy="50" r="10" fill={color} />;
             }
           };
-
           return (
-            <svg width="100%" height="90" viewBox="0 0 100 100" className="bg-slate-800/80 rounded-xl shadow-inner border border-slate-700/50 block">
-              {getAnimationElements()}
+            <svg width="100%" height="100%" viewBox="0 0 100 100" className="block">
+              {getElements()}
             </svg>
           );
         };
@@ -229,101 +113,260 @@
         // --- 主应用组件 ---
         function App() {
           const [activeTab, setActiveTab] = useState('push');
+          const [showHistoryModal, setShowHistoryModal] = useState(false);
+          const [enlargedAnim, setEnlargedAnim] = useState(null); // 放大动画状态
+          const [toast, setToast] = useState({ show: false, msg: '' });
+          
+          const [logs, setLogs] = useState(() => {
+            const saved = localStorage.getItem('ppl_workout_logs_v4');
+            if (saved) return JSON.parse(saved);
+            return {
+              push: { current: { exercises: {}, cardio: '' }, history: [] },
+              pull: { current: { exercises: {}, cardio: '' }, history: [] },
+              legs: { current: { exercises: {}, cardio: '' }, history: [] }
+            };
+          });
+
+          useEffect(() => {
+            localStorage.setItem('ppl_workout_logs_v4', JSON.stringify(logs));
+          }, [logs]);
+
           const currentData = workoutData[activeTab];
+
+          const handleSetChange = (exerciseName, setIndex, field, value) => {
+            setLogs(prev => {
+              const dayLogs = prev[activeTab];
+              const exercises = dayLogs.current.exercises;
+              const currentSets = exercises[exerciseName] || [];
+              const newSets = [...currentSets];
+              if(!newSets[setIndex]) newSets[setIndex] = { weight: '', reps: '' };
+              newSets[setIndex][field] = value;
+
+              return { ...prev, [activeTab]: { ...dayLogs, current: { ...dayLogs.current, exercises: { ...exercises, [exerciseName]: newSets } } } };
+            });
+          };
+
+          const handleCardioChange = (value) => {
+            setLogs(prev => ({ ...prev, [activeTab]: { ...prev[activeTab], current: { ...prev[activeTab].current, cardio: value } } }));
+          };
+
+          // 核心算法：计算容量、组数及卡路里
+          const calculateSummary = (dataObj) => {
+            let totalVolume = 0;
+            let totalSets = 0;
+            if (dataObj && dataObj.exercises) {
+              Object.values(dataObj.exercises).forEach(sets => {
+                sets.forEach(set => {
+                  if(!set) return;
+                  const w = parseFloat(set.weight) || 0;
+                  const r = parseInt(set.reps) || 0;
+                  if (r > 0) {
+                    totalVolume += (w > 0 ? w * r : r);
+                    totalSets += 1;
+                  }
+                });
+              });
+            }
+            const cardioMins = parseFloat(dataObj?.cardio) || 0;
+            // 卡路里估算: 力量训练每组约消耗 12 大卡，有氧每分钟约 10 大卡
+            const calories = Math.round((totalSets * 12) + (cardioMins * 10)); 
+            
+            return { totalVolume, totalSets, cardio: cardioMins, calories };
+          };
+
+          const currentSummary = calculateSummary(logs[activeTab].current);
+
+          const saveToHistory = () => {
+            const now = new Date();
+            const dateStr = `${now.getMonth() + 1}月${now.getDate()}日 ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+            
+            const newRecord = {
+              id: Date.now(),
+              date: dateStr,
+              summary: currentSummary,
+              data: JSON.parse(JSON.stringify(logs[activeTab].current)) 
+            };
+
+            setLogs(prev => {
+              const dayLogs = prev[activeTab];
+              const newHistory = [newRecord, ...dayLogs.history].slice(0, 10);
+              return { ...prev, [activeTab]: { ...dayLogs, history: newHistory } };
+            });
+            
+            // 随机选取鼓励语
+            const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            setToast({ show: true, msg: randomQuote });
+            setTimeout(() => setToast({ show: false, msg: '' }), 4000);
+          };
 
           return (
             <div className="flex justify-center bg-black min-h-screen font-sans text-slate-200">
               <div className="w-full max-w-md bg-slate-950 flex flex-col h-[100dvh] relative border-x border-slate-900/50 overflow-hidden">
                 
-                {/* Header */}
+                {/* 顶部 Header */}
                 <header className="pt-8 pb-4 px-6 bg-slate-900/80 backdrop-blur-md sticky top-0 z-20 border-b border-slate-800">
                   <div className="flex items-center justify-between">
                     <div>
                       <h1 className="text-2xl font-black text-white tracking-wider flex items-center gap-2">
                         PPL <span className={currentData.color}>PRO</span>
                       </h1>
-                      <p className="text-xs text-slate-400 mt-1 font-medium tracking-wide">定制三分化训练系统</p>
+                      <p className="text-xs text-slate-400 mt-1 font-medium flex items-center gap-1">自动暂存模板</p>
                     </div>
-                    <div className={`p-2.5 rounded-2xl ${currentData.lightBg} ${currentData.color} shadow-lg`}>
-                      <IconDumbbell size={22} strokeWidth={2.5} />
-                    </div>
+                    <button onClick={() => setShowHistoryModal(true)} className={`flex items-center gap-1.5 px-3 py-2 rounded-full border border-slate-700 bg-slate-800/80 hover:bg-slate-700 transition-colors shadow-lg ${currentData.color}`}>
+                      <IconHistory size={16} /><span className="text-xs font-bold">历史打卡</span>
+                    </button>
                   </div>
                 </header>
 
-                {/* 滚动区 */}
-                <main key={activeTab} className="flex-1 overflow-y-auto pb-48 scroll-smooth hide-scrollbar">
-                  <div className="px-6 py-6 flex flex-col gap-1">
+                {/* 主滚动区 */}
+                <main key={activeTab} className="flex-1 overflow-y-auto pb-52 scroll-smooth hide-scrollbar relative">
+                  
+                  <div className="px-6 py-5 flex flex-col gap-1">
                      <div className="flex items-center justify-between">
                        <h2 className="text-2xl font-bold flex items-center gap-3 text-white">
                           <span className={`w-1.5 h-7 rounded-full ${currentData.bgColor} shadow-[0_0_10px_currentColor]`}></span>
                           {currentData.title}
                        </h2>
                        <span className={`text-xs font-bold px-3 py-1 rounded-full ${currentData.lightBg} ${currentData.color}`}>
-                         共 {currentData.exercises.length} 动作
+                         {currentData.exercises.length} 个动作
                        </span>
                      </div>
-                     <p className="text-sm text-slate-400 ml-4 mt-1 font-medium">{currentData.desc}</p>
                   </div>
 
-                  <div className="px-4 flex flex-col gap-4">
-                    {currentData.exercises.map((exercise, index) => (
-                      <div key={index} className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg relative overflow-hidden">
-                        <div className={`absolute -top-10 -right-10 w-24 h-24 rounded-full ${currentData.bgColor} opacity-5 blur-2xl`}></div>
-                        
-                        <div className="flex justify-between items-start mb-4 relative z-10">
-                          <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-                            <span className={`text-sm font-black opacity-40 ${currentData.color}`}>0{index + 1}</span>
-                            {exercise.name}
-                          </h3>
-                          <span className="text-xs font-bold px-2.5 py-1 bg-slate-800 text-slate-300 rounded-lg border border-slate-700">
-                            {exercise.sets}
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-12 gap-4 mt-2 relative z-10">
-                          <div className="col-span-4 flex flex-col items-center justify-start pt-1">
-                            <StickmanAnimation type={exercise.animType} color={currentData.svgColor} />
-                            <span className="text-[10px] text-slate-500 mt-2 font-medium tracking-widest flex items-center gap-1">
-                              <span className={`w-1.5 h-1.5 rounded-full ${currentData.bgColor} animate-pulse`}></span>动画演示
+                  {/* 动作列表 */}
+                  <div className="px-4 flex flex-col gap-5">
+                    {currentData.exercises.map((exercise, index) => {
+                      const loggedSets = logs[activeTab].current.exercises[exercise.name] || [];
+                      
+                      return (
+                        <div key={index} className="bg-slate-900 border border-slate-800 rounded-[1.5rem] p-5 shadow-lg relative overflow-hidden">
+                          <div className={`absolute -top-10 -right-10 w-24 h-24 rounded-full ${currentData.bgColor} opacity-5 blur-2xl`}></div>
+                          
+                          <div className="flex justify-between items-start mb-4 relative z-10">
+                            <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+                              <span className={`text-sm font-black opacity-40 ${currentData.color}`}>0{index + 1}</span>
+                              {exercise.name}
+                            </h3>
+                            <span className="text-xs font-bold px-2.5 py-1 bg-slate-800 text-slate-300 rounded-lg border border-slate-700">
+                              {exercise.sets}
                             </span>
                           </div>
-                          <div className="col-span-8 flex flex-col gap-3">
-                            <div className="bg-slate-800/40 p-2.5 rounded-xl border border-slate-800">
-                              <div className="text-[11px] text-slate-500 mb-0.5 flex items-center gap-1.5 font-bold uppercase tracking-wider">
-                                <IconActivity size={12} className={currentData.color} /> 目标肌群
-                              </div>
-                              <div className="text-sm font-bold text-slate-200">{exercise.target}</div>
-                            </div>
-                            <div className="bg-slate-800/40 p-2.5 rounded-xl border border-slate-800">
-                              <div className="text-[11px] text-slate-500 mb-0.5 flex items-center gap-1.5 font-bold uppercase tracking-wider">
-                                <IconShieldCheck size={12} className={currentData.color} /> 器材建议
-                              </div>
-                              <div className="text-sm font-medium text-slate-300">{exercise.equipment}</div>
-                            </div>
-                          </div>
-                        </div>
 
-                        <div className="mt-4 pt-3 border-t border-slate-800/80 relative z-10">
-                          <div className="flex gap-2 items-start">
-                            <IconInfo size={14} className="text-slate-400 mt-0.5 flex-shrink-0" />
-                            <p className="text-xs text-slate-400 leading-relaxed font-medium">
-                              <span className="text-slate-300 font-bold mr-1">动作要点：</span>{exercise.trajectory}
-                            </p>
+                          <div className="grid grid-cols-12 gap-3 mt-2 relative z-10 mb-4">
+                            {/* 可点击放大的动画缩略图 */}
+                            <div 
+                              className="col-span-4 flex flex-col items-center justify-center bg-slate-800/80 rounded-xl border border-slate-700/50 cursor-pointer active:scale-95 transition-transform p-1 h-24 relative"
+                              onClick={() => setEnlargedAnim({ ...exercise, color: currentData.svgColor, bgColor: currentData.bgColor })}
+                            >
+                              <div className="absolute top-1 right-1 text-slate-500"><IconMaximize size={12}/></div>
+                              <StickmanAnimation type={exercise.animType} color={currentData.svgColor} />
+                            </div>
+                            
+                            <div className="col-span-8 flex flex-col gap-2">
+                              <div className="bg-slate-800/40 p-2 rounded-lg border border-slate-800 flex items-center gap-2">
+                                <IconActivity size={14} className={currentData.color} />
+                                <span className="text-sm font-bold text-slate-200">{exercise.target}</span>
+                              </div>
+                              <div className="bg-slate-800/40 p-2 rounded-lg border border-slate-800 flex items-center gap-2">
+                                <IconShieldCheck size={14} className={currentData.color} />
+                                <span className="text-sm font-medium text-slate-300">{exercise.equipment}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 动作要领说明 */}
+                          <div className="bg-slate-800/30 rounded-xl p-3 border border-slate-800 border-l-2 border-l-slate-600 mb-4 text-xs text-slate-400 leading-relaxed font-medium">
+                            <span className="text-slate-200 font-bold">要点：</span>{exercise.trajectory}
+                          </div>
+
+                          {/* 记录看板 */}
+                          <div className="bg-slate-950/50 rounded-2xl p-3 border border-slate-800/80 relative z-10">
+                            <div className="grid grid-cols-12 gap-2 text-center text-[10px] text-slate-500 font-bold mb-2 uppercase">
+                              <div className="col-span-2">组数</div>
+                              <div className="col-span-5">重量 (KG)</div>
+                              <div className="col-span-5">次数</div>
+                            </div>
+                            {[...Array(exercise.setsNum)].map((_, setIdx) => {
+                               const setLog = loggedSets[setIdx] || { weight: '', reps: '' };
+                               return (
+                                <div key={setIdx} className="grid grid-cols-12 gap-2 mb-2 items-center">
+                                  <div className="col-span-2 text-center text-xs font-bold text-slate-400 bg-slate-800/50 rounded-lg py-2">
+                                    {setIdx + 1}
+                                  </div>
+                                  <div className="col-span-5">
+                                    <input type="number" placeholder="重量" value={setLog.weight} 
+                                      onChange={(e) => handleSetChange(exercise.name, setIdx, 'weight', e.target.value)}
+                                      className="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg py-1.5 px-3 text-center focus:outline-none focus:border-slate-500" />
+                                  </div>
+                                  <div className="col-span-5">
+                                    <input type="number" placeholder="次数" value={setLog.reps} 
+                                      onChange={(e) => handleSetChange(exercise.name, setIdx, 'reps', e.target.value)}
+                                      className="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg py-1.5 px-3 text-center focus:outline-none focus:border-slate-500" />
+                                  </div>
+                                </div>
+                               )
+                            })}
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
 
-                  <div className="mx-4 mt-8 mb-4 p-5 rounded-3xl bg-slate-800/30 border border-slate-700/50 flex flex-col items-center text-center">
-                     <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center mb-2"><span className="text-xl">🔥</span></div>
-                     <h4 className="text-sm font-bold text-slate-200 mb-1">今日核心任务</h4>
-                     <p className="text-xs text-slate-400 font-medium">保证动作标准，尝试比上次多做1次或增加2.5kg重量。</p>
+                  {/* 有氧记录 */}
+                  <div className="mx-4 mt-6 p-5 rounded-3xl bg-slate-900 border border-slate-800 shadow-lg relative overflow-hidden">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className={`p-2 rounded-xl bg-orange-500/15 text-orange-500`}><IconTimer size={20} /></div>
+                      <h3 className="text-lg font-bold text-slate-100">有氧收尾</h3>
+                    </div>
+                    <div className="flex items-center justify-between bg-slate-950/50 p-3 rounded-2xl border border-slate-800/80">
+                      <span className="text-sm font-medium text-slate-400 ml-2">时长预估 (分钟)</span>
+                      <input type="number" placeholder="0" value={logs[activeTab].current.cardio} 
+                             onChange={(e) => handleCardioChange(e.target.value)}
+                             className="w-24 bg-slate-800 border border-slate-700 text-white text-lg font-bold rounded-xl py-2 px-3 text-center focus:outline-none focus:border-orange-500" />
+                    </div>
+                  </div>
+
+                  {/* 数据看板 (新增卡路里) */}
+                  <div className="mx-4 mt-6 mb-6 p-1 rounded-3xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50">
+                    <div className="bg-slate-950/80 rounded-[22px] p-5">
+                      <h3 className="text-center text-sm font-bold text-slate-400 mb-4 flex items-center justify-center gap-2">
+                        <span>📊</span> 今日训练数据预估
+                      </h3>
+                      <div className="grid grid-cols-4 gap-2 divide-x divide-slate-800 text-center">
+                        <div className="flex flex-col items-center">
+                          <span className="text-xl font-black text-white">{currentSummary.totalSets}</span>
+                          <span className="text-[9px] text-slate-500 font-bold mt-1">组数</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <span className={`text-xl font-black ${currentData.color}`}>{currentSummary.totalVolume}</span>
+                          <span className="text-[9px] text-slate-500 font-bold mt-1">容量(KG)</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <span className="text-xl font-black text-orange-400">{currentSummary.cardio || 0}</span>
+                          <span className="text-[9px] text-slate-500 font-bold mt-1">有氧(分)</span>
+                        </div>
+                        <div className="flex flex-col items-center relative">
+                          <span className="text-xl font-black text-rose-500 flex items-center"><IconFlame size={14}/> {currentSummary.calories}</span>
+                          <span className="text-[9px] text-slate-500 font-bold mt-1">消耗(kcal)</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 打卡按钮 */}
+                  <div className="px-4 mb-8">
+                    <button 
+                      onClick={saveToHistory}
+                      className={`w-full py-4 rounded-2xl flex items-center justify-center gap-2 bg-gradient-to-r ${currentData.btnBg} text-white font-bold text-lg shadow-[0_4px_20px_rgba(0,0,0,0.3)] active:scale-95 transition-transform`}
+                    >
+                      <IconCheck size={22} strokeWidth={3} /> 完成并打卡
+                    </button>
+                    <p className="text-center text-[10px] text-slate-500 mt-3 font-medium">存入档案库 (仅保留最近10次循环)</p>
                   </div>
                 </main>
 
                 {/* 底部导航 */}
-                <div className="absolute bottom-6 w-full px-5 pt-16 bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent z-50 pointer-events-none">
+                <div className="absolute bottom-6 w-full px-5 pt-16 bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent z-10 pointer-events-none">
                   <nav className="bg-slate-800/95 backdrop-blur-xl border border-slate-700/80 rounded-full p-2 flex justify-between items-center shadow-2xl relative pointer-events-auto">
                     <button onClick={() => setActiveTab('push')} className={`relative flex-1 flex flex-col items-center justify-center py-2.5 rounded-full transition-all duration-300 ${activeTab === 'push' ? 'bg-rose-500/15' : 'hover:bg-slate-700/50'}`}>
                       {activeTab === 'push' && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-rose-500 rounded-b-full shadow-[0_0_8px_#f43f5e]"></span>}
@@ -339,12 +382,108 @@
                     </button>
                   </nav>
                 </div>
+
+                {/* --- 放大动画 弹出层 --- */}
+                {enlargedAnim && (
+                  <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 modal-enter" onClick={() => setEnlargedAnim(null)}>
+                     <div className="w-full max-w-sm bg-slate-900 rounded-3xl p-6 border border-slate-700 shadow-2xl relative overflow-hidden" onClick={e => e.stopPropagation()}>
+                         <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full ${enlargedAnim.bgColor} opacity-10 blur-2xl`}></div>
+                         <button onClick={() => setEnlargedAnim(null)} className="absolute top-4 right-4 text-slate-500 hover:text-white bg-slate-800 p-2 rounded-full">✕</button>
+                         <h3 className="text-xl font-bold text-white mb-6 text-center">{enlargedAnim.name}</h3>
+                         <div className="h-48 w-full bg-slate-950 rounded-2xl border border-slate-800 flex items-center justify-center p-4">
+                             <StickmanAnimation type={enlargedAnim.animType} color={enlargedAnim.color} />
+                         </div>
+                         <div className="mt-6 bg-slate-800/50 p-4 rounded-xl border border-slate-800">
+                             <p className="text-sm text-slate-300 leading-relaxed"><span className="font-bold text-white">发力要领：</span>{enlargedAnim.trajectory}</p>
+                         </div>
+                     </div>
+                  </div>
+                )}
+
+                {/* --- 历史记录 弹出层 --- */}
+                {showHistoryModal && (
+                  <div className="absolute inset-0 z-[40] bg-slate-950 flex flex-col modal-enter">
+                    <div className="pt-8 pb-4 px-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+                      <button onClick={() => setShowHistoryModal(false)} className="p-2 bg-slate-800 rounded-full text-slate-300 hover:text-white">
+                        <IconChevronLeft size={20} />
+                      </button>
+                      <h2 className="text-lg font-bold text-white">[{currentData.title}] 档案库</h2>
+                      <div className="w-9"></div>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto p-4 bg-black pb-12">
+                      {logs[activeTab].history.length === 0 ? (
+                        <div className="text-center text-slate-500 mt-20 flex flex-col items-center">
+                          <IconHistory size={48} className="mb-4 opacity-30" />
+                          <p>暂无打卡记录</p>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-4">
+                          <p className="text-xs text-slate-500 text-center mb-2 pb-2">展示最近10次训练表现</p>
+                          {logs[activeTab].history.map((record, idx) => (
+                            <div key={record.id} className="bg-slate-900 border border-slate-800 rounded-[1.25rem] p-4 shadow-lg flex flex-col relative">
+                              {idx === 0 && <span className={`absolute top-0 right-0 px-2 py-1 text-[10px] font-bold text-white rounded-bl-lg rounded-tr-[1.25rem] ${currentData.bgColor}`}>最新</span>}
+                              
+                              <div className="flex justify-between items-center mb-3">
+                                <div className="text-sm font-bold text-slate-300 flex items-center gap-2">
+                                  <IconCheck size={16} className={currentData.color}/>
+                                  {record.date}
+                                </div>
+                                <div className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2 py-1 rounded-md flex items-center gap-1">
+                                  <IconFlame size={12}/> {record.summary.calories} kcal
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-3 gap-2 text-center mb-4">
+                                <div className="bg-slate-950/50 rounded-xl py-2 flex flex-col">
+                                  <span className="text-base font-black text-white">{record.summary.totalSets}</span>
+                                  <span className="text-[9px] text-slate-500 font-bold">总组数</span>
+                                </div>
+                                <div className="bg-slate-950/50 rounded-xl py-2 flex flex-col">
+                                  <span className={`text-base font-black ${currentData.color}`}>{record.summary.totalVolume}</span>
+                                  <span className="text-[9px] text-slate-500 font-bold">容量(KG)</span>
+                                </div>
+                                <div className="bg-slate-950/50 rounded-xl py-2 flex flex-col">
+                                  <span className="text-base font-black text-orange-400">{record.summary.cardio || 0}</span>
+                                  <span className="text-[9px] text-slate-500 font-bold">有氧(分)</span>
+                                </div>
+                              </div>
+
+                              {/* 具体的动作容量详情折叠显示 */}
+                              <div className="border-t border-slate-800/80 pt-3 flex flex-col gap-2">
+                                {Object.entries(record.data.exercises).map(([exName, sets]) => {
+                                  const validSets = sets.filter(s => s && s.weight && s.reps);
+                                  if(validSets.length === 0) return null;
+                                  const setsString = validSets.map(s => `${s.weight}kg×${s.reps}`).join(', ');
+                                  return (
+                                    <div key={exName} className="flex justify-between items-start gap-4 text-xs">
+                                      <span className="text-slate-400 font-bold whitespace-nowrap">{exName}</span>
+                                      <span className="text-slate-500 text-right leading-tight">{setsString}</span>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Toast 打卡成功提示框 */}
+                {toast.show && (
+                  <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[90%] max-w-sm bg-emerald-500 text-white px-4 py-3 rounded-2xl shadow-2xl z-[100] font-bold text-sm flex items-center justify-center text-center gap-2 animate-bounce-toast border border-emerald-400">
+                    <IconCheck size={20} className="flex-shrink-0" /> 
+                    <span>{toast.msg}</span>
+                  </div>
+                )}
+                
               </div>
             </div>
           );
         }
 
-        // 渲染应用
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
